@@ -44,20 +44,20 @@ public class CamTextureView extends TextureView implements TextureView.SurfaceTe
 
     @Override
     public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
-        CamLog.d(TAG, "SurfaceCreated");
+        CamLog.d(TAG, "onSurfaceTextureAvailable, mCallback is " + (mCallback != null));
         mIsCreated = true;
         if (mCallback != null) mCallback.pleaseStart();
     }
 
     @Override
     public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
-        CamLog.d(TAG, "SurfaceChanged");
+        CamLog.d(TAG, "onSurfaceTextureSizeChanged");
         mIsCreated = true;
     }
 
     @Override
     public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
-        CamLog.d(TAG, "surfaceDestroyed");
+        CamLog.d(TAG, "onSurfaceTextureDestroyed");
         mIsCreated = false;
         if (mCallback != null) mCallback.pleaseStop();
         return false;
@@ -65,6 +65,6 @@ public class CamTextureView extends TextureView implements TextureView.SurfaceTe
 
     @Override
     public void onSurfaceTextureUpdated(SurfaceTexture surface) {
-
+        //CamLog.d(TAG, "onSurfaceTextureUpdated");
     }
 }

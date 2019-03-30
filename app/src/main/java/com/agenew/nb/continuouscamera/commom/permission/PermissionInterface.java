@@ -13,13 +13,7 @@ public interface PermissionInterface {
     String[] getPermissions();
 
     /**
-     * 请求权限成功回调
+     * 请求权限回调
      */
-    void requestPermissionsSuccess();
-
-    /**
-     * 请求权限失败回调
-     */
-    void requestPermissionsFail();
-
+    void permissionsResult(boolean success);
 }

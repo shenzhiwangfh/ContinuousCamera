@@ -20,7 +20,7 @@ public class IViewDecorator {
         } else if (view instanceof TextureView) {
             mViewTexture = (CamTextureView) view;
         } else {
-            throw new RuntimeException("错误的view");
+            throw new RuntimeException("Invalid View");
         }
     }
 

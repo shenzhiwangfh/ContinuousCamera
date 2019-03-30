@@ -5,6 +5,7 @@ import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CaptureRequest;
+import android.hardware.camera2.CaptureResult;
 import android.hardware.camera2.TotalCaptureResult;
 import android.media.Image;
 import android.media.ImageReader;
@@ -13,6 +14,7 @@ import android.util.Size;
 
 import com.agenew.nb.continuouscamera.MyCameraManager;
 import com.agenew.nb.continuouscamera.base.TakePhotoFunc;
+import com.agenew.nb.continuouscamera.commom.CamLog;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -20,7 +22,9 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 
-public class StatePicAndPreview extends StatePreview implements ImageReader.OnImageAvailableListener{
+public class StatePicAndPreview extends StatePreview implements ImageReader.OnImageAvailableListener {
+
+    private final static String TAG = "StatePicAndPreview";
 
     public StatePicAndPreview(MyCameraManager cd) {
         super(cd);
@@ -91,12 +95,34 @@ public class StatePicAndPreview extends StatePreview implements ImageReader.OnIm
                     = new CameraCaptureSession.CaptureCallback() {
 
                 @Override
+                public void onCaptureStarted(@NonNull CameraCaptureSession session,
+                                             @NonNull CaptureRequest request,
+                                             long timestamp,
+                                             long frameNumber) {
+                    // default empty implementation
+                    CamLog.e(TAG, "onCaptureStarted");
+                }
+
+                @Override
+                public void onCaptureProgressed(@NonNull CameraCaptureSession session,
+                                                @NonNull CaptureRequest request,
+                                                @NonNull CaptureResult partialResult) {
+                    // default empty implementation
+                    CamLog.e(TAG, "onCaptureProgressed");
+                }
+
+                @Override
                 public void onCaptureCompleted(@NonNull CameraCaptureSession session,
                                                @NonNull CaptureRequest request,
                                                @NonNull TotalCaptureResult result) {
+                    CamLog.e(TAG, "onCaptureCompleted");
+
                     StateTakePicCb cb = (StateTakePicCb) mStateBaseCb;
                     cb.onToken(mFile.getPath());
+                    CamLog.e(TAG, "onCaptureCompleted22");
+
                     func.onPictureToken(mFile.getPath());
+                    CamLog.e(TAG, "onCaptureCompleted33");
                 }
             };
 

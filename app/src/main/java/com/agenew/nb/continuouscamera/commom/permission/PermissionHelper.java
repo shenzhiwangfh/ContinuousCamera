@@ -1,6 +1,7 @@
 package com.agenew.nb.continuouscamera.commom.permission;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.pm.PackageManager;
 import android.support.annotation.NonNull;
 
@@ -27,7 +28,7 @@ public class PermissionHelper {
         if (deniedPermissions != null && deniedPermissions.length > 0) {
             PermissionUtil.requestPermissions(mActivity, deniedPermissions, mPermissionInterface.getPermissionsRequestCode());
         } else {
-            mPermissionInterface.requestPermissionsSuccess();
+            mPermissionInterface.permissionsResult(true);
         }
     }
 
@@ -50,14 +51,18 @@ public class PermissionHelper {
             }
             if (isAllGranted) {
                 //已全部授权
-                mPermissionInterface.requestPermissionsSuccess();
+                mPermissionInterface.permissionsResult(true);
             } else {
                 //权限有缺失
-                mPermissionInterface.requestPermissionsFail();
+                mPermissionInterface.permissionsResult(false);
             }
             return true;
         }
         return false;
+    }
+
+    public boolean hasPermission(Context context, String permission) {
+        return PermissionUtil.hasPermission(context, permission);
     }
 
 }

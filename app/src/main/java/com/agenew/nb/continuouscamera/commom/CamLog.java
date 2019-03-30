@@ -16,10 +16,10 @@ public class CamLog {
     */
 
     public static void d(String tag, String s) {
-        Log.i(TAG, "" + tag + ": " + s);
+        Log.i(TAG, tag + ": " + s);
     }
 
     public static void e(String tag, String s) {
-        Log.e(TAG, "" + tag + ": " + s);
+        Log.e(TAG, tag + ": " + s);
     }
 }

@@ -183,11 +183,12 @@ public class MyCameraManager implements WeakHandler.WeakCallback, ICameraAction 
                 } catch (CameraAccessException e) {
                     e.printStackTrace();
                 }
-                setPreviewSize(1920, 1080); //其实如果这里不设置，系统会camera显示的区域更多。我认为谷歌在camera的显示区域这块这些不够好
+                setPreviewSize(720, 1280); //其实如果这里不设置，系统会camera显示的区域更多。我认为谷歌在camera的显示区域这块这些不够好
                 int camId = CameraCharacteristics.LENS_FACING_FRONT;
                 mCameraId = camId;
                 try {
                     mCamChars = manager.getCameraCharacteristics("" + camId);
+
                     StreamConfigurationMap map = mCamChars.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP);
                     if (map == null) {
                         CamLog.e(TAG, "map = null");
