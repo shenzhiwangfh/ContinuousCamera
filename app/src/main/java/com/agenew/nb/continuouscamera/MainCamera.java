@@ -24,6 +24,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
+//user camera api, it has been deprecated
 public class MainCamera extends AppCompatActivity implements SurfaceHolder.Callback,
         View.OnClickListener, Camera.PictureCallback {
     private SurfaceView mSurfaceView;
