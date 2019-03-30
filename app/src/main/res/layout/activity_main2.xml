@@ -6,7 +6,13 @@
     android:layout_height="match_parent"
     tools:context=".Main2Camera">
 
-    <include layout="@layout/content_main2" />
+    <com.agenew.nb.continuouscamera.view.CamTextureView
+        android:id="@+id/surfaceView2"
+        android:layout_width="match_parent"
+        android:layout_height="512dp"
+        tools:ignore="MissingConstraints"
+        tools:layout_editor_absoluteX="9dp"
+        tools:layout_editor_absoluteY="0dp" />
 
     <android.support.design.widget.FloatingActionButton
         android:id="@+id/take_picture"
