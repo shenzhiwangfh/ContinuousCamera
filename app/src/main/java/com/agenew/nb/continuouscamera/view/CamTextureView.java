@@ -19,7 +19,7 @@ public class CamTextureView extends TextureView implements TextureView.SurfaceTe
 
     private boolean mIsCreated = false;
 
-    public boolean getIsCreated() {
+    public boolean isCreated() {
         return mIsCreated;
     }
 
@@ -44,7 +44,7 @@ public class CamTextureView extends TextureView implements TextureView.SurfaceTe
 
     @Override
     public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
-        CamLog.d(TAG, "onSurfaceTextureAvailable, mCallback is " + (mCallback != null));
+        CamLog.d(TAG, "onSurfaceTextureAvailable");
         mIsCreated = true;
         if (mCallback != null) mCallback.pleaseStart();
     }

@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     tools:context=".Main2Camera">
 
-    <com.agenew.nb.continuouscamera.view.CamTextureView
+    <com.agenew.nb.continuouscamera.view.AutoFitTextureView
         android:id="@+id/surfaceView2"
         android:layout_width="@dimen/preview_width"
         android:layout_height="@dimen/preview_height"
@@ -17,11 +17,11 @@
         android:id="@+id/count"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="92dp"
+        android:layout_marginStart="32dp"
         android:layout_marginTop="12dp"
-        android:layout_toEndOf="@id/surfaceView2"
+        android:layout_below="@id/surfaceView2"
         android:textColor="@color/colorPrimary"
-        android:textSize="48sp" />
+        android:textSize="32sp" />
 
     <android.support.design.widget.FloatingActionButton
         android:id="@+id/take_picture"

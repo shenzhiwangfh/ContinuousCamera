@@ -19,6 +19,8 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.agenew.nb.continuouscamera.commom.CamLog;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -102,6 +104,8 @@ public class MainCamera extends AppCompatActivity implements SurfaceHolder.Callb
         int width = getResources().getDisplayMetrics().widthPixels;
         int height = getResources().getDisplayMetrics().heightPixels;
         Camera.Size size = getBestPreviewSize(width, height, parameters);
+        CamLog.e(TAG, size.height + "x" + size.width);
+
         if (size != null) {
             //设置预览分辨率
             parameters.setPreviewSize(size.width, size.height);
