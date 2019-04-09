@@ -52,6 +52,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     // private static final int CAMERA_ID = 1; //前置摄像头
     private static final String TAG = "Main1Camera";
 
+    private SaveTask task;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -59,11 +61,20 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         initView();
         initEvent();
+
+        task = new SaveTask(this);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        task.start(TAG);
     }
 
     @Override
     protected void onPause() {
         super.onPause();
+        task.stop();
     }
 
     private void initView() {
@@ -165,22 +176,35 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             public void onPreviewFrame(byte[] data, Camera camera) {
                 Camera.Parameters parameters = camera.getParameters();
                 Camera.Size previewSize = parameters.getPreviewSize();
-                Log.e(TAG, "previewSize:" + previewSize.height + "x" + previewSize.width);
-
+                Log.e(TAG, "onPreviewFrame++:" + previewSize.height + "x" + previewSize.width);
 
                 try {
                     YuvImage image = new YuvImage(data, ImageFormat.NV21, previewSize.width, previewSize.height, null);
                     if (image != null) {
+                        //Log.e(TAG, "image:" + image.getHeight() + "x" + image.getWidth());
+
+                        task.setSize(previewSize);
+                        task.addImage(image);
+                        /*
                         ByteArrayOutputStream stream = new ByteArrayOutputStream();
-                        image.compressToJpeg(new Rect(0, 0, previewSize.width, previewSize.height), 80, stream);
+                        image.compressToJpeg(new Rect(0, 0, previewSize.width, previewSize.height), 50, stream);
                         Bitmap bmp = BitmapFactory.decodeByteArray(stream.toByteArray(), 0, stream.size());
                         //因为图片会放生旋转，因此要对图片进行旋转到和手机在一个方向上
                         rotateMyBitmap(bmp);
                         stream.close();
+
+                        FileOutputStream fos = new FileOutputStream(new File
+                                (Environment.getExternalStorageDirectory() + File.separator + System.currentTimeMillis() + ".JPEG"));
+                        bmp.compress(Bitmap.CompressFormat.JPEG, 100, fos);
+                        fos.flush();
+                        fos.close();
+                        */
                     }
                 } catch (Exception ex) {
                     Log.e(TAG, "Error:" + ex.getMessage());
                 }
+
+                Log.e(TAG, "onPreviewFrame--");
             }
         });
     }
