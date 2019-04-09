@@ -258,7 +258,7 @@ public class Main2Camera extends AppCompatActivity implements View.OnClickListen
         mMem = findViewById(R.id.mem);
         mLowMem = findViewById(R.id.lowmem);
 
-        mCapture1 = findViewById(R.id.capture1);
+        //mCapture1 = findViewById(R.id.capture1);
         //mCapture1.setOnClickListener(this);
         mCapture2 = findViewById(R.id.capture2);
         mCapture2.setOnClickListener(this);

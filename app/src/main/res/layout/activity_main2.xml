@@ -97,6 +97,7 @@
         android:layout_alignParentBottom="true"
         android:layout_marginStart="@dimen/fab_margin"
         android:layout_marginBottom="@dimen/fab_margin"
+        android:visibility="gone"
         app:backgroundTint="@color/colorButton1"
         app:srcCompat="@drawable/ic_camera" />
 

@@ -50,7 +50,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private static final int CAMERA_ID = 0; //后置摄像头
     // private static final int CAMERA_ID = 1; //前置摄像头
-    private static final String TAG = MainActivity.class.getSimpleName();
+    private static final String TAG = "Main1Camera";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -105,8 +105,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         switch (v.getId()) {
             case R.id.start:
                 Log.e(TAG, "camera,start take picture");
-                mCamera.takePicture(null, null, null, MainActivity.this);
-                //mHandler2.sendEmptyMessage(101);
+                //mCamera.takePicture(null, null, null, MainActivity.this);
+                mHandler2.sendEmptyMessage(101);
                 break;
         }
     }
@@ -157,19 +157,22 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-    /*
     private void getViewImage() {
         //设置监听
         mCamera.setPreviewCallback(new Camera.PreviewCallback() {
 
             @Override
             public void onPreviewFrame(byte[] data, Camera camera) {
-                Camera.Size size = camera.getParameters().getPreviewSize();
+                Camera.Parameters parameters = camera.getParameters();
+                Camera.Size previewSize = parameters.getPreviewSize();
+                Log.e(TAG, "previewSize:" + previewSize.height + "x" + previewSize.width);
+
+
                 try {
-                    YuvImage image = new YuvImage(data, ImageFormat.NV21, size.width, size.height, null);
+                    YuvImage image = new YuvImage(data, ImageFormat.NV21, previewSize.width, previewSize.height, null);
                     if (image != null) {
                         ByteArrayOutputStream stream = new ByteArrayOutputStream();
-                        image.compressToJpeg(new Rect(0, 0, size.width, size.height), 80, stream);
+                        image.compressToJpeg(new Rect(0, 0, previewSize.width, previewSize.height), 80, stream);
                         Bitmap bmp = BitmapFactory.decodeByteArray(stream.toByteArray(), 0, stream.size());
                         //因为图片会放生旋转，因此要对图片进行旋转到和手机在一个方向上
                         rotateMyBitmap(bmp);
@@ -190,26 +193,29 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         //imageView.setImageBitmap(nbmp);
     }
 
-    private Handler mHandler2 = new Handler() {
-        public void handleMessage(Message msg) {
+    private Handler mHandler2 = new Handler(new Handler.Callback() {
+        @Override
+        public boolean handleMessage(Message msg) {
             switch (msg.what) {
                 case 101:
                     getViewImage();
                     Log.e(TAG, "handleMessage: 拍照");
-                    mHandler.sendEmptyMessageDelayed(102, 100);
+                    //mHandler.sendEmptyMessageDelayed(102, 100);
                     break;
                 case 102:
-                    mCamera.setPreviewCallback(null);
+                    //mCamera.setPreviewCallback(null);
                     break;
             }
+            return false;
         }
-    };
-    */
+    });
 
     class MyCallback implements SurfaceHolder.Callback {
 
         @Override
         public void surfaceCreated(SurfaceHolder holder) {
+            Log.e(TAG, "MyCallback,surfaceCreated");
+
             //初始化相机
             mCamera = Camera.open();
             try {
@@ -221,14 +227,14 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
 
         @Override
-        public void surfaceChanged(SurfaceHolder holder, int format, int width,
-                                   int height) {
+        public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+            Log.e(TAG, "MyCallback,surfaceChanged");
+
             if (holder.getSurface() == null) {
                 // preview surface does not exist
                 return;
             }
-            mCamera.stopPreview();
-
+            //mCamera.stopPreview();
 
             try {
                 mCamera.setDisplayOrientation(90);
@@ -241,12 +247,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 //      System.out.println(mCamera.getParameters().flatten());
             Camera.Parameters parms = mCamera.getParameters();
             parms.setPictureFormat(ImageFormat.JPEG);//设置图片的格式
+            parms.setPreviewFrameRate(30);
             List<Camera.Size> mSupportedPreviewSizes = parms.getSupportedPreviewSizes();
             List<Camera.Size> mSupportedVideoSizes = parms.getSupportedVideoSizes();
-            Camera.Size optimalSize = getOptimalVideoSize(mSupportedVideoSizes, mSupportedPreviewSizes, height, width);
 
-            parms.setPreviewSize(optimalSize.width, optimalSize.height); // 设置预览图像大小
-            parms.setPictureSize(optimalSize.width, optimalSize.height);//设置照片的大小
+            //Log.e(TAG, "getOptimalVideoSize," + width + "x" + height);
+            Camera.Size optimalSize = getOptimalVideoSize(mSupportedVideoSizes, mSupportedPreviewSizes, height, width);
+            Log.e(TAG, "optimalSize," + optimalSize.width + "x" + optimalSize.height);
+
+            parms.setPreviewSize(optimalSize.width, optimalSize.height); //设置预览图像大小
+            parms.setPictureSize(optimalSize.width, optimalSize.height); //设置照片的大小
 //       Size size= parms.getPictureSize();
 //       Size size2= parms.getPreviewSize();
 //       System.out.println(size2.width);
@@ -257,6 +267,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             } catch (Exception e) {
                 e.printStackTrace();
             }
+
+            Camera.Size pictureSize = parms.getPictureSize();
+            Camera.Size previewSize = parms.getPreviewSize();
+            Log.e(TAG, "pictureSize=" + pictureSize.width + "" + pictureSize.height);
+            Log.e(TAG, "previewSize=" + previewSize.width + "" + previewSize.height);
 
         }
 
