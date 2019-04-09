@@ -33,7 +33,7 @@ public class BackgroundHandler extends Handler {
         }
     }
 
-    public void addTask(Image image, ImageSaveListener listener) {
-        post(new ImageSaverTask(context, image, listener));
-    }
+    //public void addTask(Image image, ImageSaveListener listener) {
+    //    post(new ImageSaverTask(context, image, listener));
+    //}
 }

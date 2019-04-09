@@ -1,4 +1,12 @@
 <resources>
     <string name="app_name">ContinuousCamera</string>
     <string name="title_activity_main2">Main2Activity</string>
+
+    <string name="total_time">Total Time:%1$d hh %2$d min %3$d sec</string>
+    <string name="capture_number">Saved/Captured:%1$d/%2$d</string>
+    <string name="save_speed">Save Speed:%1$d(page/sec)</string>
+    <string name="capture_speed">Capture Speed:%1$d(page/sec)</string>
+    <string name="origin_memory">Origin Memory:%1$s/%2$s</string>
+    <string name="now_memory">Now Memory:%1$s/%2$s</string>
+    <string name="low_memory">Low Memory:%1$s</string>
 </resources>

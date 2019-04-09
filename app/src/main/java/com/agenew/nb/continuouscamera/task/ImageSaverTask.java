@@ -9,7 +9,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
 import com.agenew.nb.continuouscamera.commom.CamLog;
@@ -19,7 +21,8 @@ public class ImageSaverTask implements Runnable {
     private final static String TAG = "ImageSaverTask";
 
     private final Context context;
-    private final Image image;
+    private List<Image> images = new ArrayList<>();
+    private Image image;
     private ImageSaveListener listener;
 
     private SimpleDateFormat formatter;
@@ -30,6 +33,18 @@ public class ImageSaverTask implements Runnable {
         this.listener = listener;
 
         formatter = new SimpleDateFormat("yyyyMMddHHmmss", Locale.CHINA);
+    }
+
+    public void addImage(Image image) {
+        images.add(image);
+    }
+
+    public Image pickImage() {
+        return images.get(0);
+    }
+
+    public void removeImage() {
+        images.remove(0);
     }
 
     @Override
@@ -61,7 +76,7 @@ public class ImageSaverTask implements Runnable {
             }
         }
 
-        if(listener != null) listener.onSaveCompleted();
+        //if(listener != null) listener.onSaveCompleted();
         CamLog.i(TAG, "ImageSaverTask--");
     }
 }

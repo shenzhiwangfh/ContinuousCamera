@@ -5,6 +5,9 @@ import android.graphics.SurfaceTexture;
 import android.util.AttributeSet;
 import android.view.TextureView;
 
+import com.agenew.nb.continuouscamera.Main2Camera;
+import com.agenew.nb.continuouscamera.commom.CamLog;
+
 public class AutoFitTextureView extends TextureView implements TextureView.SurfaceTextureListener {
 
     private int mRatioWidth = 0;
@@ -48,20 +51,20 @@ public class AutoFitTextureView extends TextureView implements TextureView.Surfa
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         int width = MeasureSpec.getSize(widthMeasureSpec);
         int height = MeasureSpec.getSize(heightMeasureSpec);
-        //Log.e(MainActivity.TAG, "00width=" + width + ",height=" + height);
+        //CamLog.e(Main2Camera.TAG, "00width=" + width + ",height=" + height);
 
         if (0 == mRatioWidth || 0 == mRatioHeight) {
             setMeasuredDimension(width, height);
-            //Log.e(MainActivity.TAG, "11width=" + width + ",height=" + height);
+            //CamLog.e(Main2Camera.TAG, "11width=" + width + ",height=" + height);
         } else {
             if (width < height * mRatioWidth / mRatioHeight) {
                 height = width * mRatioHeight / mRatioWidth;
                 setMeasuredDimension(width, height);
-                //Log.e(MainActivity.TAG, "22width=" + width + ",height=" + height);
+                //CamLog.e(Main2Camera.TAG, "22width=" + width + ",height=" + height);
             } else {
                 width = height * mRatioWidth / mRatioHeight;
                 setMeasuredDimension(width, height);
-                //Log.e(MainActivity.TAG, "33width=" + width + ",height=" + height);
+                //CamLog.e(Main2Camera.TAG, "33width=" + width + ",height=" + height);
             }
         }
     }

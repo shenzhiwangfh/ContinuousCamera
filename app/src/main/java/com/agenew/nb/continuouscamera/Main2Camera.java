@@ -1,6 +1,7 @@
 package com.agenew.nb.continuouscamera;
 
 import android.Manifest;
+import android.app.ActivityManager;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
@@ -32,6 +33,7 @@ import android.view.Surface;
 import android.view.View;
 import android.widget.TextView;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -41,9 +43,8 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 import com.agenew.nb.continuouscamera.commom.CamLog;
-import com.agenew.nb.continuouscamera.task.BackgroundHandler;
 import com.agenew.nb.continuouscamera.task.ImageSaveListener;
-import com.agenew.nb.continuouscamera.task.ImageSaverTask;
+import com.agenew.nb.continuouscamera.task.SaveSession;
 import com.agenew.nb.continuouscamera.view.AutoFitTextureView;
 
 //user camera2 api
@@ -52,7 +53,7 @@ public class Main2Camera extends AppCompatActivity implements View.OnClickListen
     /**
      * Tag for the {@link CamLog}.
      */
-    public static final String TAG = "Camera2API";
+    public static final String TAG = "Main2Camera";
 
     /**
      * Conversion from screen rotation to JPEG orientation.
@@ -127,9 +128,10 @@ public class Main2Camera extends AppCompatActivity implements View.OnClickListen
     };
 
     /**
-     * A {@link BackgroundHandler} for running tasks in the background.
+     * A {@link SaveSession} for running tasks in the background.
      */
-    private BackgroundHandler mBackgroundHandler;
+    //private BackgroundHandler mBackgroundHandler;
+    private SaveSession mSaveSession;
 
     /**
      * An {@link ImageReader} that handles still image capture.
@@ -144,7 +146,10 @@ public class Main2Camera extends AppCompatActivity implements View.OnClickListen
             = new ImageReader.OnImageAvailableListener() {
         @Override
         public void onImageAvailable(ImageReader reader) {
-            mBackgroundHandler.addTask(reader.acquireNextImage(), Main2Camera.this);
+            //mBackgroundHandler.addTask(reader.acquireNextImage(), Main2Camera.this);
+
+            //handler.sendEmptyMessage(MSG_TAKE_PICTURE);
+            mSaveSession.addImage(reader.acquireLatestImage());
         }
     };
 
@@ -178,8 +183,18 @@ public class Main2Camera extends AppCompatActivity implements View.OnClickListen
 
 
     private AutoFitTextureView mTextureView;
+    private TextView mTime;
     private TextView mCount;
-    private FloatingActionButton mActionButton;
+    private TextView mSaveSpeed;
+    private TextView mCaptureSpeed;
+    private TextView mInitMem;
+    private TextView mMem;
+    private TextView mLowMem;
+    private FloatingActionButton mCapture1;
+    private FloatingActionButton mCapture2;
+
+
+    private ActivityManager activityManager;
 
     /**
      * Given {@code choices} of {@code Size}s supported by a camera, choose the smallest one that
@@ -235,17 +250,30 @@ public class Main2Camera extends AppCompatActivity implements View.OnClickListen
         setContentView(R.layout.activity_main2);
 
         mTextureView = findViewById(R.id.surfaceView2);
+        mTime = findViewById(R.id.time);
         mCount = findViewById(R.id.count);
-        mActionButton = findViewById(R.id.take_picture);
-        mActionButton.setOnClickListener(this);
+        mSaveSpeed = findViewById(R.id.save_speed);
+        mCaptureSpeed = findViewById(R.id.capture_speed);
+        mInitMem = findViewById(R.id.initmem);
+        mMem = findViewById(R.id.mem);
+        mLowMem = findViewById(R.id.lowmem);
 
-        mBackgroundHandler = new BackgroundHandler(this, TAG);
+        mCapture1 = findViewById(R.id.capture1);
+        //mCapture1.setOnClickListener(this);
+        mCapture2 = findViewById(R.id.capture2);
+        mCapture2.setOnClickListener(this);
+
+        //mBackgroundHandler = new BackgroundHandler(this, TAG);
+        mSaveSession = new SaveSession(this, this);
+        activityManager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
     }
 
     @Override
     public void onResume() {
         super.onResume();
-        mBackgroundHandler.start();
+        //mBackgroundHandler.start();
+        mSaveSession.start(TAG);
+
 
         // When the screen is turned off and turned back on, the SurfaceTexture is already
         // available, and "onSurfaceTextureAvailable" will not be called. In that case, we can open
@@ -261,7 +289,8 @@ public class Main2Camera extends AppCompatActivity implements View.OnClickListen
     @Override
     public void onPause() {
         closeCamera();
-        mBackgroundHandler.stop();
+        mSaveSession.stop();
+        //mBackgroundHandler.stop();
         super.onPause();
     }
 
@@ -315,8 +344,8 @@ public class Main2Camera extends AppCompatActivity implements View.OnClickListen
                 Size pictureSize = new Size(720, 1280);
 
                 mImageReader = ImageReader.newInstance(pictureSize.getWidth(), pictureSize.getHeight(),
-                        ImageFormat.JPEG, /*maxImages*/2);
-                mImageReader.setOnImageAvailableListener(mOnImageAvailableListener, mBackgroundHandler);
+                        ImageFormat.JPEG, /*maxImages*/10);
+                mImageReader.setOnImageAvailableListener(mOnImageAvailableListener, mSaveSession.getHandler());
 
                 // Find out if we need to swap dimension to get the preview size relative to sensor
                 // coordinate.
@@ -368,7 +397,13 @@ public class Main2Camera extends AppCompatActivity implements View.OnClickListen
                 // garbage capture data.
                 mPreviewSize = chooseOptimalSize(map.getOutputSizes(SurfaceTexture.class),
                         rotatedPreviewWidth, rotatedPreviewHeight, maxPreviewWidth,
-                        maxPreviewHeight, largest);
+                        maxPreviewHeight, pictureSize);
+                //CamLog.e(TAG, "rotatedPreviewWidth=" + rotatedPreviewWidth + ",rotatedPreviewHeight=" + rotatedPreviewHeight);
+                //CamLog.e(TAG, "maxPreviewWidth=" + maxPreviewWidth + ",maxPreviewHeight=" + maxPreviewHeight);
+                //CamLog.e(TAG, "pictureSize=" + pictureSize.toString());
+                //CamLog.e(TAG, "mPreviewSize=" + mPreviewSize.toString());
+                mPreviewSize = new Size(pictureSize.getHeight(), pictureSize.getWidth());
+                //CamLog.e(TAG, "mPreviewSize=" + mPreviewSize.toString());
 
                 // We fit the aspect ratio of TextureView to the size of preview we picked.
                 int orientation = getResources().getConfiguration().orientation;
@@ -403,7 +438,7 @@ public class Main2Camera extends AppCompatActivity implements View.OnClickListen
             if (!mCameraOpenCloseLock.tryAcquire(2500, TimeUnit.MILLISECONDS)) {
                 throw new RuntimeException("Time out waiting to lock camera opening.");
             }
-            manager.openCamera(mCameraId, mStateCallback, mBackgroundHandler);
+            manager.openCamera(mCameraId, mStateCallback, mSaveSession.getHandler());
         } catch (CameraAccessException e) {
             e.printStackTrace();
         } catch (InterruptedException e) {
@@ -539,14 +574,14 @@ public class Main2Camera extends AppCompatActivity implements View.OnClickListen
                                                @NonNull CaptureRequest request,
                                                @NonNull TotalCaptureResult result) {
                     CamLog.e(TAG, "onCaptureCompleted");
-                    startPreview();
+                    //startPreview();
                 }
             };
 
             mCaptureSession.stopRepeating();
             mCaptureSession.abortCaptures();
 
-            CamLog.e(TAG, "capture");
+            //CamLog.e(TAG, "capture");
             mCaptureSession.capture(captureBuilder.build(), CaptureCallback, null);
         } catch (CameraAccessException e) {
             e.printStackTrace();
@@ -571,7 +606,7 @@ public class Main2Camera extends AppCompatActivity implements View.OnClickListen
         try {
             // Finally, we start displaying the camera preview.
             mPreviewRequest = mPreviewRequestBuilder.build();
-            mCaptureSession.setRepeatingRequest(mPreviewRequest, mPreviewCallback, mBackgroundHandler);
+            mCaptureSession.setRepeatingRequest(mPreviewRequest, mPreviewCallback, mSaveSession.getHandler());
         } catch (CameraAccessException e) {
 
         }
@@ -580,15 +615,51 @@ public class Main2Camera extends AppCompatActivity implements View.OnClickListen
     @Override
     public void onClick(View view) {
         switch (view.getId()) {
-            case R.id.take_picture: {
-                CamLog.e(TAG, "captureStillPicture");
+            case R.id.capture1: {
+                CamLog.e(TAG, "capture1");
                 //captureStillPicture();
-                if (canContinue) {
-                    canContinue = false;
+
+                if (isRunning) {
+                    isRunning = false;
                 } else {
-                    canContinue = true;
-                    handler.sendEmptyMessage(0);
-                    handler.sendEmptyMessage(1);
+                    isRunning = true;
+                    mSaveSession.reset();
+                    mCapture2.setEnabled(false);
+
+                    startTime = System.currentTimeMillis();
+
+                    ActivityManager.MemoryInfo outInfo = new ActivityManager.MemoryInfo();
+                    activityManager.getMemoryInfo(outInfo);
+                    String availMem = fileSizeConver(outInfo.availMem);
+                    String totalMem = fileSizeConver(outInfo.totalMem);
+                    mInitMem.setText(getString(R.string.origin_memory, availMem, totalMem));
+
+                    handler.sendEmptyMessage(MSG_TAKE_PICTURE1);
+                    handler.sendEmptyMessage(MSG_SHOW_MESSAGE);
+                }
+                break;
+            }
+            case R.id.capture2: {
+                CamLog.e(TAG, "capture2");
+                //captureStillPicture();
+
+                if (isRunning) {
+                    isRunning = false;
+                } else {
+                    isRunning = true;
+                    mSaveSession.reset();
+                    mCapture2.setEnabled(false);
+
+                    startTime = System.currentTimeMillis();
+
+                    ActivityManager.MemoryInfo outInfo = new ActivityManager.MemoryInfo();
+                    activityManager.getMemoryInfo(outInfo);
+                    String availMem = fileSizeConver(outInfo.availMem);
+                    String totalMem = fileSizeConver(outInfo.totalMem);
+                    mInitMem.setText(getString(R.string.origin_memory, availMem, totalMem));
+
+                    handler.sendEmptyMessage(MSG_TAKE_PICTURE2);
+                    handler.sendEmptyMessage(MSG_SHOW_MESSAGE);
                 }
                 break;
             }
@@ -609,8 +680,18 @@ public class Main2Camera extends AppCompatActivity implements View.OnClickListen
     }
 
     @Override
-    public void onSaveCompleted() {
-        saveCount++;
+    public void onSaveCompleted(int saved, int total) {
+        CamLog.i(TAG, "onSaveCompleted," + saved + "/" + total);
+
+        /*
+        Message message = Message.obtain();
+        message.what = MSG_SHOW_MESSAGE;
+        message.arg1 = saved;
+        message.arg2 = total;
+        handler.sendMessage(message);
+        */
+        //savedCount = saved;
+        //totalCount = total;
     }
 
     @Override
@@ -623,25 +704,129 @@ public class Main2Camera extends AppCompatActivity implements View.OnClickListen
         configureTransform(width, height);
     }
 
-    private int saveCount = 0;
-    private int takeCount = 0;
+    private boolean isRunning = false;
+    private final static int MSG_TAKE_PICTURE1 = 1;
+    private final static int MSG_TAKE_PICTURE2 = 2;
+    private final static int MSG_SHOW_MESSAGE = 0;
+    private int CAPTURE_INTERVAL_TIME = 30; //
+    private int SHOW_INTERVAL_TIME = 1000;
+    private int savedCount, captureCount;
 
-    private boolean canContinue = false;
+    private long startTime;
+    private final static long MAX_TIME = 1 * 10 * 1000;
+
+    //private void sendNext(int msg, intCAPTURE interval) {
+    //
+    //}
+
     private Handler handler = new Handler(new Handler.Callback() {
         @Override
         public boolean handleMessage(Message msg) {
-            int what = msg.what;
-            if (what == 0 && canContinue) {
-                takeCount++;
+            switch (msg.what) {
+                case MSG_TAKE_PICTURE1: {
+                    if (!isRunning) break;
+                    CamLog.i(TAG, "MSG_TAKE_PICTURE");
 
-                captureStillPicture();
-                handler.sendEmptyMessageDelayed(0, 50);
-            } else if(what == 1) {
-                String count = saveCount + "/" + takeCount;
-                mCount.setText(count);
-                handler.sendEmptyMessageDelayed(1, 1000);
+                    long start = System.currentTimeMillis();
+                    //CamLog.i(TAG, "start");
+
+                    mSaveSession.updateCaptureCount();
+                    //captureStillPicture();
+
+                    long end = System.currentTimeMillis();
+                    long next = 0;
+                    if ((end - start) < CAPTURE_INTERVAL_TIME)
+                        next = CAPTURE_INTERVAL_TIME - (end - start);
+                    handler.sendEmptyMessageDelayed(MSG_TAKE_PICTURE1, next);
+
+                    //CamLog.i(TAG, "next=" + next);
+                }
+                case MSG_TAKE_PICTURE2: {
+                    if (!isRunning) break;
+                    CamLog.i(TAG, "MSG_TAKE_PICTURE");
+
+                    long start = System.currentTimeMillis();
+                    //CamLog.i(TAG, "start");
+
+                    mSaveSession.updateCaptureCount();
+                    captureStillPicture();
+
+                    long end = System.currentTimeMillis();
+                    long next = 0;
+                    if ((end - start) < CAPTURE_INTERVAL_TIME)
+                        next = CAPTURE_INTERVAL_TIME - (end - start);
+                    handler.sendEmptyMessageDelayed(MSG_TAKE_PICTURE2, next);
+
+                    //CamLog.i(TAG, "next=" + next);
+                }
+                break;
+                case MSG_SHOW_MESSAGE: {
+                    //if (!isRunning) break;
+                    CamLog.i(TAG, "MSG_SHOW_MESSAGE");
+
+                    long start = System.currentTimeMillis();
+
+                    long time = (start - startTime) / 1000;
+                    int hh = (int) time / 3600;
+                    int min = (int) time / 60;
+                    int sec = (int) time % 60;
+                    mTime.setText(getString(R.string.total_time, hh, min, sec));
+
+                    int saved = mSaveSession.getSavedCount();
+                    int captured = mSaveSession.getCaptureCount();
+                    mCount.setText(getString(R.string.capture_number, saved, captured));
+
+                    int savedSpeed = saved - savedCount;
+                    int captureSpeed = captured - captureCount;
+                    mSaveSpeed.setText(getString(R.string.save_speed, savedSpeed));
+                    mCaptureSpeed.setText(getString(R.string.capture_speed, captureSpeed));
+
+                    ActivityManager.MemoryInfo outInfo = new ActivityManager.MemoryInfo();
+                    activityManager.getMemoryInfo(outInfo);
+                    String availMem = fileSizeConver(outInfo.availMem);
+                    String totalMem = fileSizeConver(outInfo.totalMem);
+                    mMem.setText(getString(R.string.now_memory, availMem, totalMem));
+                    mLowMem.setText(getString(R.string.low_memory, String.valueOf(outInfo.lowMemory)));
+
+                    long end = System.currentTimeMillis();
+                    long next = 0;
+                    if ((end - start) < SHOW_INTERVAL_TIME)
+                        next = SHOW_INTERVAL_TIME - (end - start);
+
+                    savedCount = saved;
+                    captureCount = captured;
+
+                    if ((end - startTime) > MAX_TIME) { //
+                        isRunning = false;
+                    }
+                    handler.sendEmptyMessageDelayed(MSG_SHOW_MESSAGE, next);
+                }
+                break;
             }
             return true;
         }
     });
+
+    private String fileSizeConver(long fileS) {
+        DecimalFormat df = new DecimalFormat("#.00");
+        String fileSizeString = "";
+        String wrongSize = "0B";
+        if (fileS == 0) {
+            return wrongSize;
+        }
+        if (fileS < 1024) {
+            fileSizeString = df.format((double) fileS) + "B";
+        } else if (fileS < 1048576) {
+            fileSizeString = df.format((double) fileS / 1024) + "KB";
+        } else if (fileS < 1073741824) {
+            fileSizeString = df.format((double) fileS / 1048576) + "MB";
+        } else {
+            fileSizeString = df.format((double) fileS / 1073741824) + "GB";
+        }
+        return fileSizeString;
+    }
+
+    private void pickSurfaceImage() {
+
+    }
 }

@@ -1,8 +1,8 @@
 <resources>
-    <dimen name="fab_margin">32dp</dimen>
+    <dimen name="fab_margin">16dp</dimen>
 
-    <dimen name="preview_margin_top">8dp</dimen>
-    <dimen name="preview_margin_start">32dp</dimen>
+    <dimen name="preview_margin_top">0dp</dimen>
+    <dimen name="preview_margin_start">0dp</dimen>
     <dimen name="preview_width">72dp</dimen>
-    <dimen name="preview_height">128dp</dimen>
+    <dimen name="preview_height">1286dp</dimen>
 </resources>
