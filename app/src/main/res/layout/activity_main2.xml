@@ -13,22 +13,45 @@
         android:layout_marginStart="@dimen/preview_margin_start"
         android:layout_marginTop="@dimen/preview_margin_top" />
 
-    <TextView
-        android:id="@+id/status"
+    <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_below="@id/surfaceView2"
-        android:layout_marginStart="4dp"
-        android:layout_marginTop="4dp"
-        android:text="@string/status_idle"
-        android:textColor="@color/colorPrimary"
-        android:textSize="18sp" />
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/status"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:layout_marginTop="2dp"
+            android:text="@string/status_idle"
+            android:textColor="@color/colorPrimary"
+            android:textSize="12sp" />
+        <TextView
+            android:id="@+id/capture_progress"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:layout_marginTop="2dp"
+            android:textColor="@color/colorAccent"
+            android:textSize="12sp" />
+        <TextView
+            android:id="@+id/save_progress"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:layout_marginTop="2dp"
+            android:textColor="@color/colorAccent"
+            android:textSize="12sp" />
+    </LinearLayout>
 
     <LinearLayout
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_below="@id/surfaceView2"
         android:orientation="vertical"
-        android:layout_below="@id/surfaceView2">
+        android:visibility="gone">
 
         <TextView
             android:id="@+id/time"
@@ -119,6 +142,7 @@
         android:layout_marginStart="@dimen/fab_margin"
         android:layout_marginBottom="@dimen/fab_margin"
         android:layout_toEndOf="@id/capture1"
+        android:visibility="gone"
         app:backgroundTint="@color/colorButton2"
         app:srcCompat="@drawable/ic_camera" />
 

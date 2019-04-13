@@ -15,13 +15,16 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Message;
 
+import com.agenew.nb.continuouscamera.R;
 import com.agenew.nb.continuouscamera.commom.CamLog;
 import com.agenew.nb.continuouscamera.view.AutoFitTextureView;
 
+import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
@@ -45,6 +48,13 @@ public class Save1Session {
 
     private SimpleDateFormat formatter;
 
+    private ImageListener mImageSaveListener;
+    private int savedCount = 0;
+    private int totalCount = 0;
+    //private ByteBuffer mByteBuffer;
+
+    private int width, height;
+
     class Callback implements Handler.Callback {
 
         @Override
@@ -63,9 +73,9 @@ public class Save1Session {
         }
     }
 
-    public Save1Session(Context context) {
+    public Save1Session(Context context, ImageListener listener) {
         mContext = context;
-        //this.listener = listener;
+        mImageSaveListener = listener;
 
         formatter = new SimpleDateFormat("yyyyMMddHHmmss", Locale.CHINA);
     }
@@ -80,6 +90,11 @@ public class Save1Session {
 
         callback = new Save1Session.Callback();
         handler = new Handler(thread.getLooper(), callback);
+
+        //mByteBuffer = ByteBuffer.allocate(8 * 1024 * 1024); //8M
+
+        width = mContext.getResources().getDimensionPixelSize(R.dimen.preview_width);
+        height = mContext.getResources().getDimensionPixelSize(R.dimen.preview_height);
     }
 
     public void stop() {
@@ -93,9 +108,12 @@ public class Save1Session {
     }
 
     private boolean saving = false;
+    private long startCapTime = 0;
 
     public void startCapture(AutoFitTextureView textureView) {
         saving = true;
+        totalCount = 0;
+        startCapTime = System.currentTimeMillis();
 
         mTextureView = textureView;
         Message message = Message.obtain();
@@ -106,6 +124,9 @@ public class Save1Session {
 
     public void stopCapture() {
         saving = false;
+
+        long consume = System.currentTimeMillis() - startCapTime;
+        if (mImageSaveListener != null) mImageSaveListener.onCaptureCompleted(totalCount, consume);
     }
 
     public void startSave() {
@@ -116,73 +137,76 @@ public class Save1Session {
     }
 
     private void capture() {
-        CamLog.e(TAG, "MSG_SAVE++");
+        //CamLog.e(TAG, "MSG_SAVE++");
         Canvas canvas = mTextureView.lockCanvas();
-
         Bitmap bitmap = mTextureView.getBitmap();
-        int byteSize = bitmap.getByteCount();
-        CamLog.e(TAG, "byteSize=" + byteSize);
+        long currentTime = System.currentTimeMillis();
 
+        int byteSize = bitmap.getByteCount();
         ByteBuffer buf = ByteBuffer.allocate(byteSize);
         bitmap.copyPixelsToBuffer(buf);
-
         byte[] byteArray = buf.array();
-        CamLog.e(TAG, "byteArray.length=" + byteArray.length);
+        //CamLog.e(TAG, "byteArray.length=" + byteArray.length);
 
         try {
-            long currentTime = System.currentTimeMillis();
+            //long currentTime = System.currentTimeMillis();
             //Date date = new Date(currentTime);
             //String name = "picture_" + formatter.format(date) + "_" + String.valueOf(currentTime % 1000);
 
-            File out = new File(mContext.getExternalFilesDir(Environment.DIRECTORY_PICTURES), String.valueOf(currentTime));
+            File out = new File(mContext.getExternalFilesDir(Environment.DIRECTORY_PICTURES), "raw_" + currentTime);
             FileOutputStream fos = new FileOutputStream(out);
             fos.write(byteArray);
             fos.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
-
         mTextureView.unlockCanvasAndPost(canvas);
-        CamLog.e(TAG, "MSG_SAVE--,");
+        totalCount++;
+        //if(mImageSaveListener != null) mImageSaveListener.onCapture(totalCount);
+        //CamLog.e(TAG, "MSG_SAVE--,");
     }
 
     private void save() {
+        savedCount = 0;
+        long startTime = System.currentTimeMillis();
+
         File root = mContext.getExternalFilesDir(Environment.DIRECTORY_PICTURES);
         File[] files = root.listFiles();
         if (files == null || files.length <= 0) return;
 
+        File picturesDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES);
+        if (!picturesDir.exists()) picturesDir.mkdirs();
+
         for (File file : files) {
             CamLog.e(TAG, "save+++");
-            CamLog.e(TAG, "" + file.getPath());
-
             try {
                 FileInputStream fis = new FileInputStream(file);
-                //byte[] buf = readStream(fis);
-                //Bitmap bitmap = bytes2bimap(buffer);
+                byte[] bytes = readStream(fis);
+                ByteBuffer buf = ByteBuffer.wrap(bytes);
+                Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+                bitmap.copyPixelsFromBuffer(buf);
 
-                byte[] buf = new byte[fis.available()];
-                fis.read(buf);
+                long currentTime = System.currentTimeMillis();
+                String name = "snapshot_" + currentTime + ".jpeg";
 
-                YuvImage yuvimage = new YuvImage(buf, ImageFormat.NV21, 720, 1280, null); //20、20分别是图的宽度与高度
-                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-                yuvimage.compressToJpeg(new Rect(0, 0, 720, 1280), 80, outputStream);//80--JPG图片的质量[0-100],100最高
-                byte[] byteArray = outputStream.toByteArray();
-                Bitmap bitmap = bytes2bimap(byteArray);
+                File out = new File(picturesDir, name);
+                CamLog.e(TAG, "getPath=" + out.getPath());
 
-                File out = new File(Environment.getExternalStorageDirectory(), file.getName() + ".jpeg");
-                FileOutputStream fos = new FileOutputStream(out);
-                bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos);
-                fos.flush();
-                fos.close();
-                //if(bitmap != null) bitmap.isRecycled();
+                try {
+                    saveBitmap(bitmap, out);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
             } catch (Exception e) {
                 e.printStackTrace();
                 CamLog.e(TAG, "Exception," + e.toString());
             }
             CamLog.e(TAG, "save---");
-
-            scan();
         }
+
+        long consume = System.currentTimeMillis() - startTime;
+        if (mImageSaveListener != null) mImageSaveListener.onSaveCompleted(savedCount, consume);
+        scan();
     }
 
     private Bitmap bytes2bimap(byte[] byteArray) {
@@ -216,4 +240,13 @@ public class Save1Session {
                 });
     }
 
+    public void saveBitmap(Bitmap bm, File saveFile) throws IOException {
+        BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(saveFile));
+        bm.compress(Bitmap.CompressFormat.JPEG, 80, bos);
+        bos.flush();
+        bos.close();
+
+        savedCount++;
+        if (mImageSaveListener != null) mImageSaveListener.onSave(savedCount, totalCount);
+    }
 }

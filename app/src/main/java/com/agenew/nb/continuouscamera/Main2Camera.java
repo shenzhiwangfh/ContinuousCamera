@@ -50,13 +50,13 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 import com.agenew.nb.continuouscamera.commom.CamLog;
-import com.agenew.nb.continuouscamera.task.ImageSaveListener;
+import com.agenew.nb.continuouscamera.task.ImageListener;
 import com.agenew.nb.continuouscamera.task.Save1Session;
 import com.agenew.nb.continuouscamera.task.SaveSession;
 import com.agenew.nb.continuouscamera.view.AutoFitTextureView;
 
 //user camera2 api
-public class Main2Camera extends AppCompatActivity implements View.OnClickListener, AutoFitTextureView.Callback, ImageSaveListener {
+public class Main2Camera extends AppCompatActivity implements View.OnClickListener, AutoFitTextureView.Callback, ImageListener {
 
     /**
      * Tag for the {@link CamLog}.
@@ -202,8 +202,10 @@ public class Main2Camera extends AppCompatActivity implements View.OnClickListen
     private TextView mLowMem;
     private FloatingActionButton mCapture1;
     private FloatingActionButton mCapture2;
-    private TextView mStatus;
 
+    private TextView mStatus;
+    private TextView mCapProgress;
+    private TextView mSaveProgress;
 
     private ActivityManager activityManager;
 
@@ -270,6 +272,8 @@ public class Main2Camera extends AppCompatActivity implements View.OnClickListen
         mLowMem = findViewById(R.id.lowmem);
 
         mStatus = findViewById(R.id.status);
+        mCapProgress = findViewById(R.id.capture_progress);
+        mSaveProgress = findViewById(R.id.save_progress);
 
         mCapture1 = findViewById(R.id.capture1);
         mCapture1.setOnClickListener(this);
@@ -280,7 +284,7 @@ public class Main2Camera extends AppCompatActivity implements View.OnClickListen
         mSaveSession = new SaveSession(this, this);
         activityManager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
 
-        mSave1Session = new Save1Session(this);
+        mSave1Session = new Save1Session(this, this);
     }
 
     @Override
@@ -289,7 +293,6 @@ public class Main2Camera extends AppCompatActivity implements View.OnClickListen
         //mBackgroundHandler.start();
         mSaveSession.start(TAG);
         mSave1Session.start(TAG);
-
 
         // When the screen is turned off and turned back on, the SurfaceTexture is already
         // available, and "onSurfaceTextureAvailable" will not be called. In that case, we can open
@@ -650,35 +653,16 @@ public class Main2Camera extends AppCompatActivity implements View.OnClickListen
                     status = STATUS_CAPTURE;
                     mStatus.setText(R.string.status_capture);
                     mSave1Session.startCapture(mTextureView);
-                } else if(status == STATUS_CAPTURE) {
+                } else if (status == STATUS_CAPTURE) {
                     status = STATUS_SAVE;
                     mStatus.setText(R.string.status_save);
                     mSave1Session.stopCapture();
                     mSave1Session.startSave();
+                } else if (status == STATUS_SAVE) {
+                    Toast.makeText(this, R.string.status_save, Toast.LENGTH_SHORT).show();
                 } else {
-                    Toast.makeText(this, R.string.toast_saving, Toast.LENGTH_SHORT).show();
+
                 }
-
-
-                /*
-                try {
-                    File out = new File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), "test.png");
-                    FileOutputStream fos = new FileOutputStream(out);
-
-                    CamLog.e(TAG, "capture1+++");
-
-                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos);
-
-                    CamLog.e(TAG, "capture1++++");
-
-                    fos.flush();
-                    fos.close();
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-                */
-                CamLog.e(TAG, "capture1--");
-
                 break;
             }
             case R.id.capture2: {
@@ -708,6 +692,80 @@ public class Main2Camera extends AppCompatActivity implements View.OnClickListen
         }
     }
 
+    private final static int MSG_CAPTURE = 0;
+    private final static int MSG_CAPTURED = 1;
+    private final static int MSG_SAVE = 2;
+    private final static int MSG_SAVED = 3;
+
+    private Handler handler2 = new Handler(new Handler.Callback() {
+        @Override
+        public boolean handleMessage(Message msg) {
+            switch (msg.what) {
+                case MSG_CAPTURE: {
+                    int captureCount = msg.arg1;
+                    mCapProgress.setText(getString(R.string.progress_capture, captureCount));
+                }
+                break;
+                case MSG_CAPTURED: {
+                    int captureCount = msg.arg1;
+                    int time = msg.arg2;
+                    mCapProgress.setText(getString(R.string.progress_captured, captureCount, time));
+                }
+                break;
+                case MSG_SAVE: {
+                    int saveCount = msg.arg1;
+                    int totalCount = msg.arg2;
+                    mSaveProgress.setText(getString(R.string.progress_save, saveCount, totalCount));
+                }
+                break;
+                case MSG_SAVED: {
+                    int saveCount = msg.arg1;
+                    int time = msg.arg2;
+                    mSaveProgress.setText(getString(R.string.progress_saved, saveCount, time));
+
+                    status = STATUS_IDLE;
+                }
+                break;
+            }
+            return false;
+        }
+    });
+
+    @Override
+    public void onCapture(int count) {
+        Message message = Message.obtain();
+        message.what = MSG_CAPTURE;
+        message.arg1 = count;
+        handler2.sendMessage(message);
+    }
+
+    @Override
+    public void onCaptureCompleted(int total, long time) {
+        Message message = Message.obtain();
+        message.what = MSG_CAPTURED;
+        message.arg1 = total;
+        message.arg2 = (int)time;
+        handler2.sendMessage(message);
+    }
+
+    @Override
+    public void onSave(int saved, int total) {
+        Message message = Message.obtain();
+        message.what = MSG_SAVE;
+        message.arg1 = saved;
+        message.arg2 = total;
+        handler2.sendMessage(message);
+    }
+
+    @Override
+    public void onSaveCompleted(int total, long time) {
+        Message message = Message.obtain();
+        message.what = MSG_SAVED;
+        message.arg1 = total;
+        message.arg2 = (int)time;
+        handler2.sendMessage(message);
+    }
+
     /**
      * Compares two {@code Size}s based on their areas.
      */
@@ -719,21 +777,6 @@ public class Main2Camera extends AppCompatActivity implements View.OnClickListen
             return Long.signum((long) lhs.getWidth() * lhs.getHeight() -
                     (long) rhs.getWidth() * rhs.getHeight());
         }
-    }
-
-    @Override
-    public void onSaveCompleted(int saved, int total) {
-        CamLog.i(TAG, "onSaveCompleted," + saved + "/" + total);
-
-        /*
-        Message message = Message.obtain();
-        message.what = MSG_SHOW_MESSAGE;
-        message.arg1 = saved;
-        message.arg2 = total;
-        handler.sendMessage(message);
-        */
-        //savedCount = saved;
-        //totalCount = total;
     }
 
     @Override

@@ -36,7 +36,7 @@ public class SaveSession {
 
     private int captureCount = 0;
     private int savedCount = 0;
-    private ImageSaveListener listener;
+    private ImageListener listener;
 
     private SimpleDateFormat formatter;
 
@@ -65,7 +65,7 @@ public class SaveSession {
         }
     }
 
-    public SaveSession(Context context, ImageSaveListener listener) {
+    public SaveSession(Context context, ImageListener listener) {
         this.context = context;
         this.listener = listener;
 

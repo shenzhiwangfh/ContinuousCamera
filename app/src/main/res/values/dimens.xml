@@ -1,8 +1,8 @@
 <resources>
-    <dimen name="fab_margin">16dp</dimen>
+    <dimen name="fab_margin">8dp</dimen>
 
     <dimen name="preview_margin_top">0dp</dimen>
     <dimen name="preview_margin_start">0dp</dimen>
-    <dimen name="preview_width">720px</dimen>
-    <dimen name="preview_height">1280px</dimen>
+    <dimen name="preview_width">540px</dimen>
+    <dimen name="preview_height">960px</dimen>
 </resources>

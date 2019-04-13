@@ -23,11 +23,11 @@ public class ImageSaverTask implements Runnable {
     private final Context context;
     private List<Image> images = new ArrayList<>();
     private Image image;
-    private ImageSaveListener listener;
+    private ImageListener listener;
 
     private SimpleDateFormat formatter;
 
-    public ImageSaverTask(Context context, Image image, ImageSaveListener listener) {
+    public ImageSaverTask(Context context, Image image, ImageListener listener) {
         this.context = context;
         this.image = image;
         this.listener = listener;

@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Camera2API</string>
+    <string name="app_name">KaKaKa</string>
     <string name="title_activity_main2">Main2Activity</string>
 
     <string name="total_time">Total Time:%1$d hh %2$d min %3$d sec</string>
@@ -10,9 +10,13 @@
     <string name="now_memory">Now Memory:%1$s/%2$s</string>
     <string name="low_memory">Low Memory:%1$s</string>
 
-    <string name="status_idle">Idle</string>
-    <string name="status_capture">Capturing</string>
-    <string name="status_save">Saving</string>
+    <string name="status_idle">Idle, click button to start</string>
+    <string name="status_capture">Capturing, click button to stop</string>
+    <string name="status_save">Saving, please wait</string>
+    <string name="status_saved">Saved, click button to restart</string>
 
-    <string name="toast_saving">Saving, please wait</string>
+    <string name="progress_capture">Capture,%1$d</string>
+    <string name="progress_captured">Captured,Count=%1$d,Time=%2$d(ms)</string>
+    <string name="progress_save">Save,%1$d/%2$d</string>
+    <string name="progress_saved">Saved,Count=%1$d,Time=%2$d(ms)</string>
 </resources>
