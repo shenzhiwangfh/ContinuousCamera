@@ -168,23 +168,26 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
+    private static int count = 0;
     private void getViewImage() {
         //设置监听
         mCamera.setPreviewCallback(new Camera.PreviewCallback() {
 
             @Override
             public void onPreviewFrame(byte[] data, Camera camera) {
-                Camera.Parameters parameters = camera.getParameters();
-                Camera.Size previewSize = parameters.getPreviewSize();
-                Log.e(TAG, "onPreviewFrame++:" + previewSize.height + "x" + previewSize.width);
+                Log.e(TAG, "onPreviewFrame++");
+
+                //Camera.Parameters parameters = camera.getParameters();
+                //Camera.Size previewSize = parameters.getPreviewSize();
+                //Log.e(TAG, "onPreviewFrame++:" + previewSize.height + "x" + previewSize.width);
 
                 try {
-                    YuvImage image = new YuvImage(data, ImageFormat.NV21, previewSize.width, previewSize.height, null);
-                    if (image != null) {
+                    //YuvImage image = new YuvImage(data, ImageFormat.NV21, previewSize.width, previewSize.height, null);
+                    //if (image != null) {
                         //Log.e(TAG, "image:" + image.getHeight() + "x" + image.getWidth());
 
-                        task.setSize(previewSize);
-                        task.addImage(image);
+                    //    task.setSize(previewSize);
+                    //    task.addImage(image);
                         /*
                         ByteArrayOutputStream stream = new ByteArrayOutputStream();
                         image.compressToJpeg(new Rect(0, 0, previewSize.width, previewSize.height), 50, stream);
@@ -199,6 +202,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         fos.flush();
                         fos.close();
                         */
+                    //}
+
+                    if(data != null && data.length > 0) {
+                        File out = new File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), "test" + String.valueOf(count++));
+                        FileOutputStream fos = new FileOutputStream(out);
+                        fos.write(data);
+                        fos.close();
                     }
                 } catch (Exception ex) {
                     Log.e(TAG, "Error:" + ex.getMessage());
