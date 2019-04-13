@@ -4,6 +4,7 @@ import android.content.Context;
 import android.media.Image;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.Message;
 
 import com.agenew.nb.continuouscamera.Main2Camera;
 
@@ -33,7 +34,4 @@ public class BackgroundHandler extends Handler {
         }
     }
 
-    //public void addTask(Image image, ImageSaveListener listener) {
-    //    post(new ImageSaverTask(context, image, listener));
-    //}
 }

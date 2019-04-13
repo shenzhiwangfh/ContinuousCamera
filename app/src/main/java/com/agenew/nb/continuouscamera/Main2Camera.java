@@ -5,6 +5,7 @@ import android.app.ActivityManager;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.graphics.Bitmap;
 import android.graphics.ImageFormat;
 import android.graphics.Matrix;
 import android.graphics.Point;
@@ -20,6 +21,7 @@ import android.hardware.camera2.TotalCaptureResult;
 import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.ImageReader;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Message;
@@ -27,12 +29,17 @@ import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Range;
 import android.util.Size;
 import android.util.SparseIntArray;
 import android.view.Surface;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.nio.ByteBuffer;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -44,6 +51,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.agenew.nb.continuouscamera.commom.CamLog;
 import com.agenew.nb.continuouscamera.task.ImageSaveListener;
+import com.agenew.nb.continuouscamera.task.Save1Session;
 import com.agenew.nb.continuouscamera.task.SaveSession;
 import com.agenew.nb.continuouscamera.view.AutoFitTextureView;
 
@@ -132,6 +140,7 @@ public class Main2Camera extends AppCompatActivity implements View.OnClickListen
      */
     //private BackgroundHandler mBackgroundHandler;
     private SaveSession mSaveSession;
+    private Save1Session mSave1Session;
 
     /**
      * An {@link ImageReader} that handles still image capture.
@@ -149,7 +158,8 @@ public class Main2Camera extends AppCompatActivity implements View.OnClickListen
             //mBackgroundHandler.addTask(reader.acquireNextImage(), Main2Camera.this);
 
             //handler.sendEmptyMessage(MSG_TAKE_PICTURE);
-            mSaveSession.addImage(reader.acquireLatestImage());
+            //mSaveSession.addImage(reader.acquireLatestImage());
+            CamLog.e(TAG, "onImageAvailable");
         }
     };
 
@@ -192,6 +202,7 @@ public class Main2Camera extends AppCompatActivity implements View.OnClickListen
     private TextView mLowMem;
     private FloatingActionButton mCapture1;
     private FloatingActionButton mCapture2;
+    private TextView mStatus;
 
 
     private ActivityManager activityManager;
@@ -258,14 +269,18 @@ public class Main2Camera extends AppCompatActivity implements View.OnClickListen
         mMem = findViewById(R.id.mem);
         mLowMem = findViewById(R.id.lowmem);
 
-        //mCapture1 = findViewById(R.id.capture1);
-        //mCapture1.setOnClickListener(this);
+        mStatus = findViewById(R.id.status);
+
+        mCapture1 = findViewById(R.id.capture1);
+        mCapture1.setOnClickListener(this);
         mCapture2 = findViewById(R.id.capture2);
         mCapture2.setOnClickListener(this);
 
         //mBackgroundHandler = new BackgroundHandler(this, TAG);
         mSaveSession = new SaveSession(this, this);
         activityManager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+
+        mSave1Session = new Save1Session(this);
     }
 
     @Override
@@ -273,6 +288,7 @@ public class Main2Camera extends AppCompatActivity implements View.OnClickListen
         super.onResume();
         //mBackgroundHandler.start();
         mSaveSession.start(TAG);
+        mSave1Session.start(TAG);
 
 
         // When the screen is turned off and turned back on, the SurfaceTexture is already
@@ -290,6 +306,8 @@ public class Main2Camera extends AppCompatActivity implements View.OnClickListen
     public void onPause() {
         closeCamera();
         mSaveSession.stop();
+        mSave1Session.stop();
+
         //mBackgroundHandler.stop();
         super.onPause();
     }
@@ -314,6 +332,14 @@ public class Main2Camera extends AppCompatActivity implements View.OnClickListen
         try {
             for (String cameraId : manager.getCameraIdList()) {
                 CameraCharacteristics characteristics = manager.getCameraCharacteristics(cameraId);
+
+                Range<Integer> fpsRanges[] = characteristics.get(CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES);
+                CamLog.e(TAG, "fpsRanges: " + Arrays.toString(fpsRanges));
+                CamLog.e(TAG, "fpsRanges: " + fpsRanges.length);
+                for (Range<Integer> fpsRange : fpsRanges) {
+                    CamLog.e(TAG, "fpsRange: " + fpsRange.toString());
+                }
+                //mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, fpsRanges[0]);
 
                 // We don't use a front facing camera in this sample.
                 Integer facing = characteristics.get(CameraCharacteristics.LENS_FACING);
@@ -345,7 +371,7 @@ public class Main2Camera extends AppCompatActivity implements View.OnClickListen
 
                 mImageReader = ImageReader.newInstance(pictureSize.getWidth(), pictureSize.getHeight(),
                         ImageFormat.JPEG, /*maxImages*/10);
-                mImageReader.setOnImageAvailableListener(mOnImageAvailableListener, mSaveSession.getHandler());
+                mImageReader.setOnImageAvailableListener(mOnImageAvailableListener, mSave1Session.getHandler());
 
                 // Find out if we need to swap dimension to get the preview size relative to sensor
                 // coordinate.
@@ -438,7 +464,7 @@ public class Main2Camera extends AppCompatActivity implements View.OnClickListen
             if (!mCameraOpenCloseLock.tryAcquire(2500, TimeUnit.MILLISECONDS)) {
                 throw new RuntimeException("Time out waiting to lock camera opening.");
             }
-            manager.openCamera(mCameraId, mStateCallback, mSaveSession.getHandler());
+            manager.openCamera(mCameraId, mStateCallback, mSave1Session.getHandler());
         } catch (CameraAccessException e) {
             e.printStackTrace();
         } catch (InterruptedException e) {
@@ -489,6 +515,7 @@ public class Main2Camera extends AppCompatActivity implements View.OnClickListen
             mPreviewRequestBuilder
                     = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
             mPreviewRequestBuilder.addTarget(surface);
+            //mPreviewRequestBuilder.addTarget(mImageReader.getSurface());
 
             // Here, we create a CameraCaptureSession for camera preview.
             mCameraDevice.createCaptureSession(Arrays.asList(surface, mImageReader.getSurface()),
@@ -606,7 +633,7 @@ public class Main2Camera extends AppCompatActivity implements View.OnClickListen
         try {
             // Finally, we start displaying the camera preview.
             mPreviewRequest = mPreviewRequestBuilder.build();
-            mCaptureSession.setRepeatingRequest(mPreviewRequest, mPreviewCallback, mSaveSession.getHandler());
+            mCaptureSession.setRepeatingRequest(mPreviewRequest, mPreviewCallback, mSave1Session.getHandler());
         } catch (CameraAccessException e) {
 
         }
@@ -619,24 +646,39 @@ public class Main2Camera extends AppCompatActivity implements View.OnClickListen
                 CamLog.e(TAG, "capture1");
                 //captureStillPicture();
 
-                if (isRunning) {
-                    isRunning = false;
+                if (status == STATUS_IDLE) {
+                    status = STATUS_CAPTURE;
+                    mStatus.setText(R.string.status_capture);
+                    mSave1Session.startCapture(mTextureView);
+                } else if(status == STATUS_CAPTURE) {
+                    status = STATUS_SAVE;
+                    mStatus.setText(R.string.status_save);
+                    mSave1Session.stopCapture();
+                    mSave1Session.startSave();
                 } else {
-                    isRunning = true;
-                    mSaveSession.reset();
-                    mCapture2.setEnabled(false);
-
-                    startTime = System.currentTimeMillis();
-
-                    ActivityManager.MemoryInfo outInfo = new ActivityManager.MemoryInfo();
-                    activityManager.getMemoryInfo(outInfo);
-                    String availMem = fileSizeConver(outInfo.availMem);
-                    String totalMem = fileSizeConver(outInfo.totalMem);
-                    mInitMem.setText(getString(R.string.origin_memory, availMem, totalMem));
-
-                    handler.sendEmptyMessage(MSG_TAKE_PICTURE1);
-                    handler.sendEmptyMessage(MSG_SHOW_MESSAGE);
+                    Toast.makeText(this, R.string.toast_saving, Toast.LENGTH_SHORT).show();
                 }
+
+
+                /*
+                try {
+                    File out = new File(getExternalFilesDir(Environment.DIRECTORY_PICTURES), "test.png");
+                    FileOutputStream fos = new FileOutputStream(out);
+
+                    CamLog.e(TAG, "capture1+++");
+
+                    bitmap.compress(Bitmap.CompressFormat.PNG, 100, fos);
+
+                    CamLog.e(TAG, "capture1++++");
+
+                    fos.flush();
+                    fos.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                */
+                CamLog.e(TAG, "capture1--");
+
                 break;
             }
             case R.id.capture2: {
@@ -704,7 +746,13 @@ public class Main2Camera extends AppCompatActivity implements View.OnClickListen
         configureTransform(width, height);
     }
 
+    private int status = STATUS_IDLE;
+    private final static int STATUS_IDLE = 0;
+    private final static int STATUS_CAPTURE = 1;
+    private final static int STATUS_SAVE = 2;
+
     private boolean isRunning = false;
+
     private final static int MSG_TAKE_PICTURE1 = 1;
     private final static int MSG_TAKE_PICTURE2 = 2;
     private final static int MSG_SHOW_MESSAGE = 0;

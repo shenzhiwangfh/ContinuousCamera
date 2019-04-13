@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">ContinuousCamera</string>
+    <string name="app_name">Camera2API</string>
     <string name="title_activity_main2">Main2Activity</string>
 
     <string name="total_time">Total Time:%1$d hh %2$d min %3$d sec</string>
@@ -9,4 +9,10 @@
     <string name="origin_memory">Origin Memory:%1$s/%2$s</string>
     <string name="now_memory">Now Memory:%1$s/%2$s</string>
     <string name="low_memory">Low Memory:%1$s</string>
+
+    <string name="status_idle">Idle</string>
+    <string name="status_capture">Capturing</string>
+    <string name="status_save">Saving</string>
+
+    <string name="toast_saving">Saving, please wait</string>
 </resources>

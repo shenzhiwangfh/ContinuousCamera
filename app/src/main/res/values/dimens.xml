@@ -3,6 +3,6 @@
 
     <dimen name="preview_margin_top">0dp</dimen>
     <dimen name="preview_margin_start">0dp</dimen>
-    <dimen name="preview_width">72dp</dimen>
-    <dimen name="preview_height">1286dp</dimen>
+    <dimen name="preview_width">720px</dimen>
+    <dimen name="preview_height">1280px</dimen>
 </resources>
