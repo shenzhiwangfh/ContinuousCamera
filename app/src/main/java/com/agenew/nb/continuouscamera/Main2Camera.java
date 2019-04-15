@@ -653,6 +653,9 @@ public class Main2Camera extends AppCompatActivity implements View.OnClickListen
                     status = STATUS_CAPTURE;
                     mStatus.setText(R.string.status_capture);
                     mSave1Session.startCapture(mTextureView);
+
+                    mCapProgress.setText("");
+                    mSaveProgress.setText("");
                 } else if (status == STATUS_CAPTURE) {
                     status = STATUS_SAVE;
                     mStatus.setText(R.string.status_save);
@@ -723,6 +726,7 @@ public class Main2Camera extends AppCompatActivity implements View.OnClickListen
                     int time = msg.arg2;
                     mSaveProgress.setText(getString(R.string.progress_saved, saveCount, time));
 
+                    mStatus.setText(R.string.status_saved);
                     status = STATUS_IDLE;
                 }
                 break;
@@ -744,7 +748,7 @@ public class Main2Camera extends AppCompatActivity implements View.OnClickListen
         Message message = Message.obtain();
         message.what = MSG_CAPTURED;
         message.arg1 = total;
-        message.arg2 = (int)time;
+        message.arg2 = (int) time;
         handler2.sendMessage(message);
     }
 
@@ -762,7 +766,7 @@ public class Main2Camera extends AppCompatActivity implements View.OnClickListen
         Message message = Message.obtain();
         message.what = MSG_SAVED;
         message.arg1 = total;
-        message.arg2 = (int)time;
+        message.arg2 = (int) time;
         handler2.sendMessage(message);
     }
 

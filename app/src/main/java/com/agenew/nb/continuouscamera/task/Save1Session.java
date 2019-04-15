@@ -51,8 +51,9 @@ public class Save1Session {
     private ImageListener mImageSaveListener;
     private int savedCount = 0;
     private int totalCount = 0;
-    //private ByteBuffer mByteBuffer;
 
+    private ByteBuffer mByteBuffer;
+    private byte[] bytes;
     private int width, height;
 
     class Callback implements Handler.Callback {
@@ -91,10 +92,11 @@ public class Save1Session {
         callback = new Save1Session.Callback();
         handler = new Handler(thread.getLooper(), callback);
 
-        //mByteBuffer = ByteBuffer.allocate(8 * 1024 * 1024); //8M
-
         width = mContext.getResources().getDimensionPixelSize(R.dimen.preview_width);
         height = mContext.getResources().getDimensionPixelSize(R.dimen.preview_height);
+
+        mByteBuffer = ByteBuffer.allocate(4 * width * height); //2M
+        bytes = new byte[4 * width * height];
     }
 
     public void stop() {
@@ -142,10 +144,11 @@ public class Save1Session {
         Bitmap bitmap = mTextureView.getBitmap();
         long currentTime = System.currentTimeMillis();
 
-        int byteSize = bitmap.getByteCount();
-        ByteBuffer buf = ByteBuffer.allocate(byteSize);
-        bitmap.copyPixelsToBuffer(buf);
-        byte[] byteArray = buf.array();
+        //int byteSize = bitmap.getByteCount();
+        //ByteBuffer buf = ByteBuffer.allocate(byteSize);
+        mByteBuffer.rewind();
+        bitmap.copyPixelsToBuffer(mByteBuffer);
+        //byte[] byteArray = mByteBuffer.array();
         //CamLog.e(TAG, "byteArray.length=" + byteArray.length);
 
         try {
@@ -155,7 +158,7 @@ public class Save1Session {
 
             File out = new File(mContext.getExternalFilesDir(Environment.DIRECTORY_PICTURES), "raw_" + currentTime);
             FileOutputStream fos = new FileOutputStream(out);
-            fos.write(byteArray);
+            fos.write(mByteBuffer.array());
             fos.close();
         } catch (Exception e) {
             e.printStackTrace();
@@ -181,22 +184,23 @@ public class Save1Session {
             CamLog.e(TAG, "save+++");
             try {
                 FileInputStream fis = new FileInputStream(file);
-                byte[] bytes = readStream(fis);
-                ByteBuffer buf = ByteBuffer.wrap(bytes);
+                //byte[] bytes = readStream(fis);
+                //ByteBuffer buf = ByteBuffer.wrap(bytes);
+                fis.read(bytes);
+                fis.close();
+
+                mByteBuffer.rewind();
+                mByteBuffer.put(bytes);
                 Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-                bitmap.copyPixelsFromBuffer(buf);
+                mByteBuffer.rewind();
+                bitmap.copyPixelsFromBuffer(mByteBuffer);
 
                 long currentTime = System.currentTimeMillis();
                 String name = "snapshot_" + currentTime + ".jpeg";
 
                 File out = new File(picturesDir, name);
                 CamLog.e(TAG, "getPath=" + out.getPath());
-
-                try {
-                    saveBitmap(bitmap, out);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+                saveBitmap(bitmap, out);
             } catch (Exception e) {
                 e.printStackTrace();
                 CamLog.e(TAG, "Exception," + e.toString());
@@ -204,9 +208,11 @@ public class Save1Session {
             CamLog.e(TAG, "save---");
         }
 
+        clear(root);
+        scan();
+
         long consume = System.currentTimeMillis() - startTime;
         if (mImageSaveListener != null) mImageSaveListener.onSaveCompleted(savedCount, consume);
-        scan();
     }
 
     private Bitmap bytes2bimap(byte[] byteArray) {
@@ -219,11 +225,14 @@ public class Save1Session {
 
     private byte[] readStream(FileInputStream in) throws Exception {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        byte[] buffer = new byte[in.available()];
-        int len = -1;
-        while ((len = in.read(buffer)) != -1) {
-            outputStream.write(buffer, 0, len);
-        }
+        //byte[] buffer = new byte[in.available()];
+        //int len = -1;
+        //while ((len = in.read(bytes)) != -1) {
+        //    outputStream.write(bytes, 0, len);
+        //}
+
+        in.read(bytes);
+        outputStream.writeTo(outputStream);
         outputStream.close();
         in.close();
         return outputStream.toByteArray();
@@ -240,13 +249,32 @@ public class Save1Session {
                 });
     }
 
-    public void saveBitmap(Bitmap bm, File saveFile) throws IOException {
-        BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(saveFile));
-        bm.compress(Bitmap.CompressFormat.JPEG, 80, bos);
+    private void saveBitmap(Bitmap bm, File saveFile) throws IOException {
+        FileOutputStream fos = new FileOutputStream(saveFile);
+        BufferedOutputStream bos = new BufferedOutputStream(fos);
+        bm.compress(Bitmap.CompressFormat.JPEG, 100, bos);
         bos.flush();
         bos.close();
+        fos.close();
 
         savedCount++;
         if (mImageSaveListener != null) mImageSaveListener.onSave(savedCount, totalCount);
+    }
+
+    private void clear(File file) {
+        if (!file.exists()) return;
+
+        if (file.isDirectory()) {
+            File[] children = file.listFiles();
+            if (children != null) {
+                for (File child : children) {
+                    clear(child);
+                }
+            } else {
+                file.delete();
+            }
+        } else {
+            file.delete();
+        }
     }
 }
